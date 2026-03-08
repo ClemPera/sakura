@@ -328,7 +328,10 @@ impl YeelightClient {
     /// Sends the command; on IO error attempts a single reconnect then retries.
     fn send_or_reconnect(&self, method: &str, params: Value) -> Result<()> {
         match self.send(method, params.clone()) {
-            Err(YeelightError::Io(_)) => {
+            Err(YeelightError::Io(e))
+                if e.kind() != std::io::ErrorKind::TimedOut
+                    && e.kind() != std::io::ErrorKind::WouldBlock =>
+            {
                 self.reconnect()?;
                 self.send(method, params)
             }
@@ -340,8 +343,17 @@ impl YeelightClient {
         // Signal the old reader thread to stop.
         self.reader_stop.lock().unwrap().store(true, Ordering::Relaxed);
 
+        // Shutdown old socket first — the bulb only accepts one connection at a time.
+        {
+            let old = self.stream.lock().unwrap();
+            let _ = old.shutdown(std::net::Shutdown::Both);
+        }
+        std::thread::sleep(Duration::from_millis(500));
+
         let new_stream = TcpStream::connect(self.addr)?;
-        let read_stream = new_stream.try_clone()?;
+        new_stream.set_read_timeout(Some(Duration::from_secs(3)))?;
+        
+        // let read_stream = new_stream.try_clone()?;
 
         // Fresh stop flag for the new thread.
         let stop = Arc::new(AtomicBool::new(false));
