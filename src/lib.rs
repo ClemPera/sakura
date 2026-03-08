@@ -347,8 +347,9 @@ impl YeelightClient {
         let stop = Arc::new(AtomicBool::new(false));
         *self.reader_stop.lock().unwrap() = Arc::clone(&stop);
 
-        let state_clone = Arc::clone(&self.state);
-        thread::spawn(move || Self::notification_reader(read_stream, state_clone, stop));
+        //TODO
+        // let state_clone = Arc::clone(&self.state);
+        // thread::spawn(move || Self::notification_reader(read_stream, state_clone, stop));
 
         *self.stream.lock().unwrap() = new_stream;
         Ok(())
