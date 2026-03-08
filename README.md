@@ -1,29 +1,17 @@
 # 🌸 sakura
 
-> A Rust library for controlling Yeelight smart bulbs over local TCP, designed to run on ESP32-S3 with [`esp-idf-svc`](https://github.com/esp-rs/esp-idf-svc).
+> A Rust library for controlling Yeelight smart bulbs over local TCP, designed to run on ESP32-S3 with [`esp-idf-svc`](https://github.com/esp-rs/esp-idf-svc) but can also run on any other devices.
 
 ---
 
 ## Features
 
 - **Full command coverage** — toggle, power, brightness, RGB, HSV, color temperature, scenes, cron timers, relative adjustments, music mode, and more
-- **State tracking** — last known bulb state is kept in sync both optimistically (on every outgoing command) and reactively (via NOTIFICATION messages pushed by the bulb, including changes from other apps or physical buttons)
+- **State tracking** — last known bulb state is kept in sync both optimistically (on every outgoing command).
 - **Auto-reconnect** — transparent reconnection on TCP drop; the background reader thread is respawned automatically
 - **LAN discovery** — optional SSDP-based discovery to find bulbs without a known IP
 - **Typed API** — validated parameters with descriptive errors before anything hits the wire
 - **ESP32-ready** — works with `std` on `xtensa-esp32s3-espidf`; no async runtime required
-
----
-
-## Installation
-
-Add to your `Cargo.toml`:
-
-```toml
-[dependencies]
-sakura    = { path = "path/to/sakura" }
-serde_json = { version = "1", default-features = false, features = ["std"] }
-```
 
 ---
 
@@ -60,13 +48,6 @@ let s = bulb.state();
 println!("on={:?}  bright={:?}  mode={:?}", s.power, s.brightness, s.color_mode);
 ```
 
-### Share across tasks (ESP32 / FreeRTOS)
-
-```rust
-let bulb = std::sync::Arc::new(bulb);
-// Clone the Arc into each FreeRTOS task.
-```
-
 ---
 
 ## API overview
@@ -100,20 +81,12 @@ let bulb = std::sync::Arc::new(bulb);
 
 ---
 
-## ESP32 notes
-
-- The notification reader thread is lightweight but FreeRTOS default stack sizes can be small. Configure thread stack size via `esp_idf_svc` pthread attributes if you hit stack overflows.
-- The bulb supports up to **4 simultaneous TCP connections** and a quota of **60 commands/minute** per connection (144/min total across all LAN connections). Music mode lifts this limit.
-- SSDP discovery sends a UDP multicast to `239.255.255.250:1982`. Make sure your ESP32 Wi-Fi interface is fully up before calling `discover()`.
-
----
-
 ## Protocol
 
 Implements the [Yeelight WiFi Light Inter-Operation Specification](https://www.yeelight.com/download/Yeelight_Inter-Operation_Spec.pdf) — JSON over TCP on port `55443`, messages terminated by `\r\n`.
 
 ---
 
-## License
+## Notes
 
-MIT
+- The bulb supports up to **4 simultaneous TCP connections** and a quota of **60 commands/minute** per connection (144/min total across all LAN connections). Music mode lifts this limit.
